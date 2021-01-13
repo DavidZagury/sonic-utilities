@@ -1016,6 +1016,32 @@ def load_minigraph(no_service_restart):
 
 
 #
+# config monitor_tx THRESHOLD 40
+# config monitor_tx POOLING_PERIOD 20
+#
+def is_valid_tx_error_monitor(value):
+    if value.isnumeric() == False or value < 0:
+        return False
+    return True
+
+@config.command("tx_error_monitor")
+@click.argument('param', required=True)
+@click.argument('value', required=True)
+def tx_error_monitor_set(param, value):
+    if param.lower() != 'threshold' and param.lower() != 'polling_period':
+        click.echo("Valid arguments are threshold or polling_period")
+        return
+    if not is_valid_tx_error_monitor(value):
+        click.echo('Configured value must be a positive number')
+        return
+
+    table_name = "TX_ERROR_CFG"
+    config_db = ConfigDBConnector()
+    config_db.connect()
+    click.echo(param)
+    config_db.set_entry(table_name, param, {"value":value})
+
+#
 # 'hostname' command
 #
 @config.command('hostname')
