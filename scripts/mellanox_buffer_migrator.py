@@ -382,7 +382,7 @@ class MellanoxBufferMigrator():
         spc1_platforms = ["x86_64-mlnx_msn2010-r0", "x86_64-mlnx_msn2100-r0", "x86_64-mlnx_msn2410-r0", "x86_64-mlnx_msn2700-r0", "x86_64-mlnx_msn2740-r0"]
         spc2_platforms = ["x86_64-mlnx_msn3700-r0", "x86_64-mlnx_msn3700c-r0"]
         spc2_platform_with_gearbox = ['x86_64-mlnx_msn3800-r0']
-        spc3_platforms = ["x86_64-mlnx_msn4600c-r0", "x86_64-mlnx_msn4700-r0"]
+        spc3_platforms = ["x86_64-mlnx_msn4600-r0", "x86_64-mlnx_msn4600c-r0", "x86_64-mlnx_msn4700-r0"]
 
         if platform in spc2_platform_with_gearbox:
             return "spc2_3800_headroom"
