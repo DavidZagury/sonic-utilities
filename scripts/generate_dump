@@ -763,6 +763,13 @@ collect_mellanox() {
     ${CMD_PREFIX}docker exec syncd tar Ccf $(dirname $sai_dump_filename) - $(basename $sai_dump_filename) | tar Cxf /tmp/ -
     save_file $sai_dump_filename sai_sdk_dump true
 
+    local mlxtrace_file=`${CMD_PREFIX}docker exec syncd find /tmp -type f -iname "mt*_pci_cr0_mlxtrace.trc"`
+    if [[ $mlxtrace_file ]]; then
+        copy_from_docker syncd $mlxtrace_file $mlxtrace_file
+        save_file $mlxtrace_file mlxtrace false
+        rm $mlxtrace_file
+    fi
+
     local mst_dump_filename="/tmp/mstdump"
     local max_dump_count="3"
     for i in $(seq 1 $max_dump_count); do
