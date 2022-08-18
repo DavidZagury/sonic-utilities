@@ -2505,8 +2505,9 @@ def reload(ctx, no_dynamic_buffer, dry_run, json_data, ports):
         _qos_update_ports(ctx, ports, dry_run, json_data)
         return
 
-    log.log_info("'qos reload' executing...")
-    _clear_qos()
+    if not dry_run:
+        log.log_info("'qos reload' executing...")
+        _clear_qos()
 
     _, hwsku_path = device_info.get_paths_to_platform_and_hwsku_dirs()
     sonic_version_file = device_info.get_sonic_version_file()
