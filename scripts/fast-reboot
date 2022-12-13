@@ -444,7 +444,7 @@ function load_aboot_secureboot_kernel() {
 
 function load_kernel() {
     # Load kernel into the memory
-    /sbin/kexec -l "$KERNEL_IMAGE" --initrd="$INITRD" --append="$BOOT_OPTIONS"
+    /sbin/kexec -l "$KERNEL_IMAGE" --initrd="$INITRD" --append="$BOOT_OPTIONS" $1
 }
 
 function unload_kernel()
@@ -597,9 +597,14 @@ if [[ "$sonic_asic_type" == "mellanox" ]]; then
     fi
 fi
 
+# check if secure boot is enable in UEFI 
+SECURE_UPGRADE_ENABLED=$(bootctl status 2>/dev/null | grep -c "Secure Boot: enabled")
 
 if is_secureboot && grep -q aboot_machine= /host/machine.conf; then
     load_aboot_secureboot_kernel
+elif [ ${SECURE_UPGRADE_ENABLED} -eq 1 ]; then
+    # -s flag is for enforcing the new load kernel(vmlinuz) to be signed and verify.
+    load_kernel "-s"
 else
     load_kernel
 fi
