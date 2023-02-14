@@ -182,7 +182,7 @@ function request_pre_shutdown()
 {
     if [ -x ${DEVPATH}/${PLATFORM}/${PLATFORM_REBOOT_PRE_CHECK} ]; then
         debug "Requesting platform reboot pre-check ..."
-    	${DEVPATH}/${PLATFORM}/${PLATFORM_REBOOT_PRE_CHECK} ${REBOOT_TYPE} 
+    	${DEVPATH}/${PLATFORM}/${PLATFORM_REBOOT_PRE_CHECK} ${REBOOT_TYPE}
     fi
     debug "Requesting pre-shutdown ..."
     STATE=$(timeout 5s docker exec syncd /usr/bin/syncd_request_shutdown --pre &> /dev/null; if [[ $? == 124 ]]; then echo "timed out"; fi)
@@ -447,9 +447,20 @@ function load_aboot_secureboot_kernel() {
         swipath=$next_image kexec=true loadonly=true ENV_EXTRA_CMDLINE="$BOOT_OPTIONS" bash -
 }
 
+function invoke_kexec() {
+    /sbin/kexec -l "$KERNEL_IMAGE" --initrd="$INITRD" --append="$BOOT_OPTIONS" $@
+}
+
 function load_kernel() {
     # Load kernel into the memory
-    /sbin/kexec -l "$KERNEL_IMAGE" --initrd="$INITRD" --append="$BOOT_OPTIONS"
+    invoke_kexec -a
+}
+
+function load_kernel_secure() {
+    # Load kernel into the memory secure
+    # -s flag is for enforcing the new load kernel(vmlinuz) to be signed and verify.
+    # not using -a flag, this flag can fallback to an old kexec load that do not support Secure Boot verification
+    invoke_kexec -s
 }
 
 function unload_kernel()
@@ -607,7 +618,13 @@ fi
 if is_secureboot && grep -q aboot_machine= /host/machine.conf; then
     load_aboot_secureboot_kernel
 else
-    load_kernel
+    # check if secure boot is enable in UEFI
+    SECURE_UPGRADE_ENABLED=$(bootctl status 2>/dev/null | grep -c "Secure Boot: enabled")
+    if [ ${SECURE_UPGRADE_ENABLED} -eq 1 ]; then
+        load_kernel_secure
+    else
+        load_kernel
+    fi
 fi
 
 init_warm_reboot_states
