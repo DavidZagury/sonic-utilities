@@ -94,3 +94,9 @@ def test_set_fips_uboot(run_command_patch, popen_patch):
     # Test fips disabled
     bootloader.set_fips(image, False)
     assert not bootloader.get_fips(image)
+
+def test_verify_image_sign():
+    bootloader = uboot.UbootBootloader()
+    image = 'test-image'
+    # Test convertion image dir to image name
+    assert bootloader.verify_image_sign(image) == True

@@ -73,3 +73,8 @@ def test_set_fips_aboot():
 
     # Cleanup
     shutil.rmtree(dirpath)
+
+def test_verify_image_sign():
+    bootloader = aboot.AbootBootloader()
+
+    assert bootloader.verify_image_sign(exp_image) == True
