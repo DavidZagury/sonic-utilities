@@ -553,12 +553,17 @@ class ServiceCreator:
                     key_cfg.update(fvs)
                     conn.mod_entry(table, key, key_cfg)
 
-        for conn in self.sonic_db.get_connectors():
-            cfg = conn.get_config()
-            new_cfg = init_cfg.copy()
-            utils.deep_update(new_cfg, cfg)
-            self.validate_config(new_cfg)
-            update_config_with_init_cfg(cfg, conn)
+        # Get running database connector directly
+        conn = self.sonic_db.get_running_db_connector()
+        if conn is None:
+            log.error("No running database available")
+            return
+
+        cfg = conn.get_config()
+        new_cfg = init_cfg.copy()
+        utils.deep_update(new_cfg, cfg)
+        self.validate_config(new_cfg)
+        update_config_with_init_cfg(cfg, conn)
 
     def remove_config(self, package):
         """ Remove configuration based on package YANG module.
