@@ -308,6 +308,21 @@ Error: 'vrf_name' length should not exceed 15 characters
         assert ('VrfNameTooLong!!!') not in db.cfgdb.get_table('VRF')
         assert expected_output in result.output
 
+    @patch('config.main.ValidatedConfigDBConnector')
+    @patch('config.main.ConfigDBConnector')
+    def test_vrf_group_no_namespace_defaults(self, mock_cdb, mock_vcdb):
+        """Single-ASIC: vrf group without -n defaults namespace to DEFAULT_NAMESPACE ('')."""
+        mock_db_instance = MagicMock()
+        mock_cdb.return_value = mock_db_instance
+        mock_vcdb_instance = MagicMock()
+        mock_vcdb_instance.get_keys.return_value = []
+        mock_vcdb.return_value = mock_vcdb_instance
+        runner = CliRunner()
+        result = runner.invoke(config.config.commands["vrf"], ['add', 'Vrf200'])
+        assert result.exit_code == 0
+        mock_cdb.assert_called_once_with(use_unix_socket_path=True, namespace='')
+        mock_db_instance.connect.assert_called_once()
+
 
 class TestVrfMultiAsic(object):
 
