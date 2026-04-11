@@ -441,7 +441,8 @@ def routes():
     """Show vnet routes related information"""
     pass
 
-def pretty_print(table, r, epval, mac_addr, vni, state):
+
+def pretty_print(table, r, epval, mac_addr, vni, metric, state):
     endpoints = epval.split(',')
     row_width = 3
     max_len = 0
@@ -458,28 +459,61 @@ def pretty_print(table, r, epval, mac_addr, vni, state):
         if iter == 0:
             r.append(mac_addr)
             r.append(vni)
+            r.append(metric)
             r.append(state)
         else:
-            r.extend(["", "", ""])
+            r.extend(["", "", "", ""])
         iter += row_width
         table.append(r)
         r = ["",""]
 
 @routes.command()
-def all():
+@click.argument('vnet_name', required=False)
+def all(vnet_name):
     """Show all vnet routes"""
-    appl_db = SonicV2Connector()
-    appl_db.connect(appl_db.APPL_DB)
-    state_db = SonicV2Connector()
-    state_db.connect(state_db.STATE_DB)
-    header = ['vnet name', 'prefix', 'nexthop', 'interface']
 
-    # Fetching data from appl_db for VNET ROUTES
+    appl_db = SonicV2Connector()
+    state_db = SonicV2Connector()
+
+    _show_local_helper(vnet_name=vnet_name, appl_db=appl_db)
+    click.echo()
+    _show_tunnel_helper(vnet_name=vnet_name, appl_db=appl_db, state_db=state_db)
+
+
+@routes.command()
+@click.argument('vnet_name', required=False)
+def local(vnet_name):
+    """Show local vnet routes"""
+
+    appl_db = SonicV2Connector()
+
+    _show_local_helper(vnet_name=vnet_name, appl_db=appl_db)
+
+
+@routes.command()
+@click.argument('vnet_name', required=False)
+def tunnel(vnet_name):
+    """Show vnet tunnel routes"""
+
+    appl_db = SonicV2Connector()
+    state_db = SonicV2Connector()
+
+    _show_tunnel_helper(vnet_name=vnet_name, appl_db=appl_db, state_db=state_db)
+
+
+def _show_local_helper(vnet_name=None, appl_db=None):
+    route_header = ['vnet name', 'prefix', 'nexthop', 'interface']
+
+    appl_db.connect(appl_db.APPL_DB)
+
+    # VNET routes
+    table = []
     vnet_rt_keys = appl_db.keys(appl_db.APPL_DB, "VNET_ROUTE_TABLE:*")
     vnet_rt_keys = natsorted(vnet_rt_keys) if vnet_rt_keys else []
 
-    table = []
     for k in vnet_rt_keys:
+        if vnet_name and k.split(":")[1] != vnet_name:
+            continue
         r = []
         r.extend(k.split(":", 2)[1:])
         val = appl_db.get_all(appl_db.APPL_DB, k)
@@ -487,21 +521,26 @@ def all():
         r.append(val.get('ifname'))
         table.append(r)
 
-    click.echo(tabulate(table, header))
+    click.echo(tabulate(table, route_header))
 
-    click.echo()
 
-    header = ['vnet name', 'prefix', 'endpoint', 'mac address', 'vni', 'status']
+def _show_tunnel_helper(vnet_name=None, appl_db=None, state_db=None):
+    tunnel_header = ['vnet name', 'prefix', 'endpoint', 'mac address', 'vni', 'metric', 'status']
 
-    # Fetching data from appl_db for VNET TUNNEL ROUTES
+    appl_db.connect(appl_db.APPL_DB)
+    state_db.connect(state_db.STATE_DB)
+
+    # VNET tunnel routes
+    table = []
     vnet_rt_keys = appl_db.keys(appl_db.APPL_DB, "VNET_ROUTE_TUNNEL_TABLE:*")
     vnet_rt_keys = natsorted(vnet_rt_keys) if vnet_rt_keys else []
 
-    table = []
     for k in vnet_rt_keys:
+        if vnet_name and k.split(":")[1] != vnet_name:
+            continue
         r = []
         r.extend(k.split(":", 2)[1:])
-        state_db_key = '|'.join(k.split(":",2))
+        state_db_key = '|'.join(k.split(":", 2))
         val = appl_db.get_all(appl_db.APPL_DB, k)
         val_state = state_db.get_all(state_db.STATE_DB, state_db_key)
         epval = val.get('endpoint')
@@ -509,36 +548,12 @@ def all():
             r.append(epval)
             r.append(val.get('mac_address'))
             r.append(val.get('vni'))
+            r.append(val.get('metric'))
             if val_state:
                 r.append(val_state.get('state'))
             table.append(r)
             continue
         state = val_state.get('state') if val_state else ""
-        pretty_print(table, r, epval, val.get('mac_address'), val.get('vni'), state )
+        pretty_print(table, r, epval, val.get('mac_address'), val.get('vni'), val.get('metric'), state)
 
-    click.echo(tabulate(table, header))
-
-
-@routes.command()
-def tunnel():
-    """Show vnet tunnel routes"""
-    appl_db = SonicV2Connector()
-    appl_db.connect(appl_db.APPL_DB)
-
-    header = ['vnet name', 'prefix', 'endpoint', 'mac address', 'vni']
-
-    # Fetching data from appl_db for VNET TUNNEL ROUTES
-    vnet_rt_keys = appl_db.keys(appl_db.APPL_DB, "VNET_ROUTE_TUNNEL_TABLE:*")
-    vnet_rt_keys = natsorted(vnet_rt_keys) if vnet_rt_keys else []
-
-    table = []
-    for k in vnet_rt_keys:
-        r = []
-        r.extend(k.split(":", 2)[1:])
-        val = appl_db.get_all(appl_db.APPL_DB, k)
-        r.append(val.get('endpoint'))
-        r.append(val.get('mac_address'))
-        r.append(val.get('vni'))
-        table.append(r)
-
-    click.echo(tabulate(table, header))
+    click.echo(tabulate(table, tunnel_header))
