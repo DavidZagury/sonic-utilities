@@ -7,7 +7,7 @@ SUPPORTED_PLATFORMS = (
     'x86_64-nvidia_sn5600_simx-r0',
     'x86_64-nvidia_sn5640-r0',
     'x86_64-nvidia_sn5640_simx-r0',
-    'x86_64-nvidia_sn6600-r0',
+    'x86_64-nvidia_sn6600_ld-r0',
     'x86_64-nvidia_sn6600_ld_simx-r0',
     'x86_64-nvidia_sn6600_simx-r0',
     'x86_64-nvidia_sn5640-r0',
